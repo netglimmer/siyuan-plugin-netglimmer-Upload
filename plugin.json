@@ -1,25 +1,20 @@
 {
   "name": "siyuan-plugin-netglimmer-Publish",
   "author": "取舍",
-  "version": "0.9.11",
+  "version": "0.9.12",
   "minAppVersion": "3.8.0",
-  "backends": [
-    "windows",
-    "linux",
-    "darwin"
-  ],
+  "backends": [],
   "frontends": [
     "desktop",
-    "desktop-store",
-    "desktop-linux"
+    "desktop-window"
   ],
   "displayName": {
     "default": "Netglimmer Publish",
     "zh_CN": "Netglimmer 发布"
   },
   "description": {
-    "default": "One-click publish documents as SiYuan-rendered HTML folders to WebDAV, FTP, SFTP servers or a local folder (Linux/Windows), with a publish dashboard, change detection and re-publish.",
-    "zh_CN": "一键将文档以「HTML (SiYuan)」格式发布到 WebDAV / FTP / SFTP 服务器或本地目录（Linux/Windows），完整保留双链、块嵌入与图片资产；内置发布看板、改动检测与一键重新发布。"
+    "default": "Publish a document as a byte-identical SiYuan HTML folder to WebDAV / FTP / SFTP / a local folder, with incremental upload, dry run, publish dashboard, change detection and unpublish.",
+    "zh_CN": "一键将文档以「HTML (SiYuan)」格式发布到 WebDAV / FTP / SFTP 服务器或本地目录：增量上传、试算、发布看板、改动检测、重新发布与取消发布；双链、块嵌入与图片资产全部保留。"
   },
   "readme": {
     "default": "README.md",
@@ -30,8 +25,10 @@
     "ftp",
     "sftp",
     "publish",
+    "html",
     "发布",
-    "local",
-    "本地"
+    "本地",
+    "增量",
+    "大纲"
   ]
 }

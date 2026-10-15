@@ -61,7 +61,6 @@ function normServer(v, proto) {
 const I18N = {
   zh_CN: {
     publish: "Netglimmer 一键发布",
-    publishMerge: "发布（含子文档）",
     publishMergeSetting: "一键发布时包含子文档",
     publishMergeDesc: "开启后，右键「Netglimmer 一键发布」会把所选文档连同其子文档合并为一篇导出发布（等同手动导出的「含子文档」）；关闭则只发布当前文档本身。",
     incremental: "增量发布（跳过重复运行时）",
@@ -162,6 +161,7 @@ const I18N = {
     dryRunResult: "试算「{d}」：待上传 {n} 个文件 / {b}，可复用服务器上 {re} 个运行时文件。本次未对远端做任何修改。",
     fileTooBig: "文件 {n} 大小为 {b}，超过单文件上限 {m}（可在设置里调大或设为 0 不限制）",
     ownerRelocated: "检测到同名文档已占用原目录，本次已发布到独立目录 {d}，避免互相覆盖",
+    ownerWriteWarn: "归属标记没能写到远端（{e}）：本次发布内容本身完整，但同名文档的覆盖保护会弱化",
     oldRootCleaned: "已清理 {n} 个改名/迁移遗留的旧发布目录",
     remotePartialWarn: "远端目录可能不完整（已建目录或部分上传后才失败）：{d}。可在看板「试算」后重新发布，或「取消发布」清空该目录。",
     stUnpub: "已取消发布",
@@ -171,6 +171,7 @@ const I18N = {
     unpublishing: "正在删除远端发布目录…",
     unpublished: "已取消发布：{d}",
     unpublishFail: "取消发布失败",
+    unpublishForeign: "目录 {d} 现在属于另一篇同名文档（检测到别人的归属标记），已取消删除，避免误删对方的发布内容",
     cannotLocateRemote: "该记录缺少远端目录信息（旧版本产生），无法自动清理，请手动删除远端目录",
     needServerForProto: "请先在插件设置中配置 {p} 的服务器地址/账号",
     copyLink: "复制",
@@ -194,7 +195,6 @@ const I18N = {
   },
   en_US: {
     publish: "Netglimmer One-Click Publish",
-    publishMerge: "Publish (with sub-docs)",
     publishMergeSetting: "Include sub-docs when publishing",
     publishMergeDesc: "When on, the right-click “Netglimmer One-Click Publish” merges the selected document together with its sub-documents into a single export (same as the manual “with sub-docs” export). When off, only the document itself is published.",
     incremental: "Incremental publish (skip duplicate runtime)",
@@ -295,6 +295,7 @@ const I18N = {
     dryRunResult: "Dry run for \"{d}\": {n} files / {b} to upload, {re} runtime files reusable on the server. Nothing was modified remotely.",
     fileTooBig: "File {n} is {b}, above the {m} per-file limit (raise it in settings, or set 0 for no limit)",
     ownerRelocated: "Another document with the same name already owns the original folder; this publish went to its own folder {d} so nothing was overwritten",
+    ownerWriteWarn: "The ownership marker could not be written to the server ({e}); the published content itself is complete, but same-name overwrite protection is weakened this round",
     oldRootCleaned: "Cleaned up {n} leftover folder(s) from renamed or moved documents",
     remotePartialWarn: "The remote folder may be incomplete (directories were created or partially uploaded before the failure): {d}. Run \"Dry run\" then republish from the dashboard, or use \"Unpublish\" to clear it.",
     stUnpub: "Unpublished",
@@ -304,6 +305,7 @@ const I18N = {
     unpublishing: "Removing the remote published folder…",
     unpublished: "Unpublished: {d}",
     unpublishFail: "Unpublish failed",
+    unpublishForeign: "Folder {d} now belongs to another document with the same name (a foreign ownership marker was found); the delete was aborted so nothing of theirs was lost",
     cannotLocateRemote: "This record has no remote folder information (created by an older version), so it cannot be cleaned automatically — please delete it manually",
     needServerForProto: "Please configure the server/address for {p} in the plugin settings first",
     copyLink: "Copy",
@@ -451,10 +453,14 @@ function rootSegsOf(prefix, docName) {
   return out;
 }
 
-/* 归属标记：目录里留一个只含本文 ID 的空后缀文件，用来判断“这个目录是谁的”。
- * 用文件名而不是文件内容承载身份，四种协议都能靠一次浅列举拿到，无需读远端正文。 */
-const OWNER_PREFIX = ".netglimmer-owner-";
-const OWNER_RE = /^\.netglimmer-owner-([0-9a-zA-Z]{1,20})\.json$/;
+/* 归属标记：目录里留一个只含本文 ID 的文件，用来判断“这个目录是谁的”。
+ * 用文件名而不是文件内容承载身份，四种协议都能靠一次浅列举拿到，无需读远端正文。
+ * 名字**故意不带前导点**：vsftpd 默认 hide_dotfiles=yes，点开头的标记在 FTP LIST/MLSD 里
+ * 根本列不出来，同名冲突检测会在 FTP 上静默失效；而非点文件在四种协议（PROPFIND /
+ * LIST / SFTP readdir / fs.readdir）里都能稳定枚举。OWNER_RE 仍兼容带点的旧名，
+ * 万一某台机器上已经有带点的标记也不会认不出来。 */
+const OWNER_PREFIX = "netglimmer-owner-";
+const OWNER_RE = /^\.?netglimmer-owner-([0-9a-zA-Z]{1,20})\.json$/;
 function ownerName(docId) {
   const tail = String(docId || "").split("-").pop() || String(docId || "");
   const safe = tail.replace(/[^0-9a-zA-Z]/g, "").slice(0, 12) || "unknown";
@@ -2054,7 +2060,13 @@ class WebdavUploader {
       { files: new Map(), paths: new Map(), status: 207, partial: false });
     return { supported: w.status === 207, files: w.files, paths: w.paths, partial: !!w.partial };
   }
-  async deleteTree(segs) { await davDeleteChildren(this.s, this.rootDisplay(segs), 0); }
+  async deleteTree(segs) {
+    const url = this.rootDisplay(segs);
+    await davDeleteChildren(this.s, url, 0);
+    /* davDeleteChildren 只删子项（PROPFIND 返回里跳过自身），顶层目录要单独删一次，
+     * 否则「取消发布 / 改名残留清理」会在服务器上留一个空目录。IIS 需要结尾斜杠。 */
+    if (segs.length) { try { await davDelete(this.s, url); } catch (e) { /* 非空/无权限 */ } }
+  }
   async deleteReal(loc) { await davDelete(this.s, String(loc).replace(/\/+$/, "")); }
   async probe(segs) { await transportProbe(this.s, this.url(segs)); }
   async readBack(segs) {
@@ -2262,7 +2274,12 @@ class SftpUploader {
       }
     } finally { await this.ssh.closeHandle(h); }
   }
-  async deleteTree(segs) { await this._del(segs, 0); }
+  async deleteTree(segs) {
+    await this._del(segs, 0);
+    /* _del 只删子项（子目录由父层负责 rmdir），顶层要自己删一次，
+     * 否则取消发布/改名清理会在服务器上留下一个空目录。 */
+    if (segs.length) { try { await this.ssh.rmdir(this.p(segs)); } catch (e) { /* 非空/不存在 */ } }
+  }
   async deleteReal(loc) { await this.ssh.remove(String(loc)); }
   async _del(segs, depth) {
     if (depth > 12) return;
@@ -2506,7 +2523,7 @@ class WebDAVPublishPlugin extends Plugin {
       }
     });
 
-    console.log("[netglimmer-publish] loaded v0.9.11");
+    console.log("[netglimmer-publish] loaded v0.9.12");
 
     // 注册「发布看板」独立页签（openTab/addTab 可用时点击入口直接开页面）
     this.registerDashTab();
@@ -2526,7 +2543,8 @@ class WebDAVPublishPlugin extends Plugin {
             entry.addEventListener("click", () => {
               // 直接打开设置弹窗并切换到看板视图；不可用时回退独立页签/弹窗
               this.openSetting();
-              if (!this.vdSwitch) this.openDashboard();
+              if (this.vdSwitch) { try { this.vdSwitch("dash"); } catch (e) { this.openDashboard(); } }
+              else this.openDashboard();
             });
             return;
           }
@@ -2643,17 +2661,38 @@ class WebDAVPublishPlugin extends Plugin {
   startTreeBadge() {
     if (this._badgeObserver) return; // 幂等
     const attach = () => {
-      // MutationObserver 用于跟随树的重绘补角标；个别环境缺失时退化为一次性标注
+      // MutationObserver 用于跟随树的重绘补角标；个别环境缺失时退化为一次性标注。
+      // 监听范围只圈文件树容器：整页 body 监听会让每一次无关重绘都排一次装饰任务。
       if (typeof MutationObserver !== "undefined" && !this._badgeObserver) {
         try {
-          this._badgeObserver = new MutationObserver(() => this.scheduleTreeDecorate());
-          this._badgeObserver.observe(document.body, { childList: true, subtree: true });
+          this._badgeObserver = new MutationObserver(() => {
+            if (this._badgeScoped) this.scheduleTreeDecorate();
+          });
+          this.observeBadgeTargets();
         } catch (e) { this._badgeObserver = null; }
       }
       this.scheduleTreeDecorate();
     };
     if (document.body) attach();
     else document.addEventListener("DOMContentLoaded", attach, { once: true });
+  }
+
+  /* 把观察目标挂到文件树容器上；容器还没出现时暂时挂 body，
+   * 下一次装饰发现容器已就绪会自动改挂（observeBadgeTargets 幂等）。 */
+  observeBadgeTargets() {
+    const ob = this._badgeObserver;
+    if (!ob) return;
+    const targets = [];
+    for (const sel of [".file-tree__items", ".protyle-file-tree"]) {
+      let nodes;
+      try { nodes = document.querySelectorAll(sel); } catch (e) { continue; }
+      for (const n of nodes) targets.push(n);
+    }
+    try { ob.disconnect(); } catch (e) { /* noop */ }
+    this._badgeScoped = targets.length > 0;
+    const opts = { childList: true, subtree: true };
+    if (this._badgeScoped) for (const t of targets) { try { ob.observe(t, opts); } catch (e) {} }
+    else if (document.body) { try { ob.observe(document.body, opts); } catch (e) {} }
   }
 
   stopTreeBadge() {
@@ -2687,6 +2726,8 @@ class WebDAVPublishPlugin extends Plugin {
       try { nodes = document.querySelectorAll(sel); } catch (e) { continue; }
       for (const li of nodes) { if (!seen.has(li)) { seen.add(li); items.push(li); } }
     }
+    // 树容器是懒挂载的（首次打开文档面板才有）：出现了就把观察从 body 收窄到容器
+    if (items.length && !this._badgeScoped) this.observeBadgeTargets();
     const ICONS = {
       // 简洁「地球/已上网」= 已发布且内容一致
       p: '<svg viewBox="0 0 16 16" width="12.5" height="12.5" fill="none" '
@@ -2740,11 +2781,22 @@ class WebDAVPublishPlugin extends Plugin {
   onunload() {
     try { this.stopTreeBadge(); } catch (e) { /* noop */ }
     if (this._changedTimer) { try { clearInterval(this._changedTimer); } catch (e) {} this._changedTimer = null; }
+    // 插件被卸载/禁用时收尾：进度条不能留在界面上，FTP/SFTP 的 socket 也不能留活连接。
+    // （发布任务本身仍在自己的 finally 里关闭，这里只兜“半路被卸载”的情况。）
+    try { Progress.hide(); } catch (e) { /* noop */ }
+    if (this.activeUploader) {
+      const up = this.activeUploader;
+      this.activeUploader = null;
+      try { Promise.resolve(up.close()).catch(() => {}); } catch (e) { /* noop */ }
+    }
   }
 
   t(key) {
-    const lang = conf()?.lang || "zh_CN";
-    const dict = I18N[lang] || I18N.zh_CN;
+    // 语言码归一：内核可能给 "zh-CN" / "en" / "zh_CN"，内置只带 zh_CN / en_US。
+    // 认不出的语言回落中文（思源主体中文用户为主），再落英文，最后原样返回 key。
+    const raw = String(conf()?.lang || "zh_CN").replace(/-/g, "_");
+    const lang = I18N[raw] ? raw : (I18N[raw.split("_")[0] + "_US"] ? raw.split("_")[0] + "_US" : "zh_CN");
+    const dict = I18N[lang];
     return dict[key] || I18N.en_US[key] || key;
   }
 
@@ -3207,6 +3259,9 @@ class WebDAVPublishPlugin extends Plugin {
       server: form.server, username: form.username, password: form.password, prefix: form.prefix,
       cleanOld: form.cleanOld, addToc: form.addToc, publishMerge: form.publishMerge,
       incremental: form.incremental, knownHosts: form.knownHosts,
+      // v0.9.12 的四个新旋钮以前只进了 readForm、没进这里，导致界面上改了、保存后失效
+      debug: form.debug, retryTries: form.retryTries,
+      concurrency: form.concurrency, maxFileMB: form.maxFileMB,
       profiles: this.settings.profiles,
     });
     return this.settings;
@@ -3560,8 +3615,16 @@ class WebDAVPublishPlugin extends Plugin {
       //     不参与文件数/字节数统计——它是插件的簿记，不是文档内容。
       const ownerSegs = remoteSegs.concat([owner]);
       const ownerBytes = utf8Bytes(JSON.stringify({ docId, owner: shortId, ts: Date.now() }));
-      await withRetry(() => up.put(ownerSegs, ownerBytes), retryOpts(`PUT ${owner}`));
-      exempt.add(up.keyOf(ownerSegs));
+      try {
+        await withRetry(() => up.put(ownerSegs, ownerBytes), retryOpts(`PUT ${owner}`));
+        exempt.add(up.keyOf(ownerSegs));
+      } catch (e) {
+        // 簿记文件写不动，不该让一次「内容已上传并逐字节校验通过」的发布变成失败：
+        // 页面是完整的，只是这篇目录少了一张身份凭据，下次同名冲突时保护会弱化。
+        // 降级为告警，并继续走后面的上传/校验（孤立文件清理有 OWNER_RE 兜底，不会误删旧标记）。
+        console.warn("[netglimmer-publish] 归属标记写入失败（发布继续）：", e.message || e);
+        showMessage(this.t("ownerWriteWarn").replace("{e}", e.message || String(e)), 6000, "warn");
+      }
 
       // 6. 上传文件：并发池 + 瞬时失败重试，最后上传 index.html
       //    注意：思源「HTML(SiYuan)」导出每次都会附带一整份 stage/ + appearance/
@@ -3854,6 +3917,18 @@ class WebDAVPublishPlugin extends Plugin {
       up = makeUploader(s, { hostKeys: this.hostKeyStore() });
       this.activeUploader = up;
       await up.open();
+      // 目录名是标题的函数：如果这个目录现在挂着“别人的”归属标记，说明它已经被
+      // 另一篇同名文档接管，删它就是误删。探测失败（服务器不支持列举）时按原计划继续。
+      try {
+        const owner = ownerName(rec.docId);
+        const names = await up.listNames(segs);
+        if (hasForeignOwner(names, owner)) {
+          await up.close();
+          up = null;                       // finally 里不再重复关闭
+          showMessage(this.t("unpublishForeign").replace("{d}", dirName), 8000, "warn");
+          return { fail: true, msg: "foreign" };
+        }
+      } catch (e) { console.warn("[netglimmer-publish] 取消发布前的归属探测失败，按原计划继续：", e.message || e); }
       await withRetry(() => up.deleteTree(segs), { label: "UNPUB", tries: clampInt(s.retryTries, 1, 6, 3) });
       await this.markUnpublished(rec);
       showMessage(this.t("unpublished").replace("{d}", dirName), 5000, "ok");
@@ -4215,7 +4290,7 @@ class WebDAVPublishPlugin extends Plugin {
         }
         if (rec.url) {
           c5.append(document.createTextNode(" "));
-          if (/^https?:/i.test(rec.url)) {
+          if (/^(https?|file):/i.test(rec.url)) {
             c5.append(btn(this.t("openLink"), "b3-button b3-button--outline", () => window.open(rec.url)));
           }
           c5.append(btn(this.t("copyLink"), "b3-button b3-button--outline", async () => {
@@ -4316,4 +4391,7 @@ module.exports._internals = {
   injectToc, TOC_PAYLOAD, TOC_MARKER,
   // 传输容错内部实现（重试/并发），供 node 端回归直接断言
   runPool, withRetry, isTransientError, isConnLostError, concurrencyFor,
+  // 路径加固与同名归属内部实现，供 node 端回归直接断言
+  sanitizeName, clampSeg, safeSeg, prefixSegsOf, rootSegsOf,
+  OWNER_PREFIX, OWNER_RE, ownerName, hasForeignOwner, clampInt, safeRootDisplay,
 };
