@@ -101,6 +101,8 @@ siyuan-plugin-netglimmer-Publish/
 ├── build.js                     ← splicer (Node fs only, no npm deps)
 ├── index.js                     ← artifact: core.js + the three vendored segments
 ├── plugin.json
+├── icon.png                     ← marketplace card icon (512×512 RGBA, made by tools/make-icon.py)
+├── tools/make-icon.py           ← dependency-free icon renderer (pure Python, no PIL/cairosvg)
 └── i18n/{zh_CN,en_US}.json      ← generated from the dict embedded in src/core.js
 ```
 
@@ -116,7 +118,8 @@ Rules and traps:
 - `/* @@VENDOR:name@@ … */` in `src/core.js` are splice markers (comments, no-ops at runtime); everything after `/* @@SEGMENT-BEGIN@@ */` in `src/vendored/*.js` is pasted verbatim, so do not add or remove blank lines at its edges or `--verify` fails.
 - When porting new front-end code after a SiYuan upgrade, first export "HTML (SiYuan)" by hand as a baseline, then change `src/vendored/index-html.js`, and the full byte verification inside `publish()` (or the local regressions) must pass. This plugin's whole value proposition is "byte-identical to a manual export", not "close enough".
 - The two i18n JSON files are generated from the dictionary embedded in `src/core.js`; add every new string to both locales (the regression asserts identical key sets).
-- Packaging: `node build.js && node build.js --verify`, then zip `index.js`, `plugin.json`, `README.md`, `README_zh_CN.md`, `i18n/`. Do not ship `src/` or `build.js` inside the plugin zip. `backends` must be empty (there is no kernel-side code) and `frontends` may only use values SiYuan actually has (`desktop`, `desktop-window`, `browser-desktop`, `browser-mobile`, `mobile`, `all`) — `desktop-store` / `desktop-linux` are invalid.
+- Packaging: `node build.js && node build.js --verify`, then zip `index.js`, `plugin.json`, `icon.png`, `README.md`, `README_zh_CN.md`, `i18n/`. Do not ship `src/` or `build.js` inside the plugin zip. `backends` must be empty (there is no kernel-side code) and `frontends` may only use values SiYuan actually has (`desktop`, `desktop-window`, `browser-desktop`, `browser-mobile`, `mobile`, `all`) — `desktop-store` / `desktop-linux` are invalid.
+- Marketplace icon: SiYuan 3.8.6 only looks for **`icon.png` in the plugin's root folder**. `getInstalledPlugin` fills `iconURL` with `/plugins/<dir>/icon.png?v=<timestamp>` when that file exists, and the card uses it as `<img src>`; otherwise (or on load error) it falls back to the generic store placeholder. There is no icon field in `plugin.json`. Regenerate with `python3 tools/make-icon.py` (512×512 RGBA, ~12 KB, zero dependencies, and it also renders light/dark and 64 px previews so the document-plus-upload glyph stays legible at card size).
 
 Regressions live in `/root/harness/` and need the local kernel (16806) plus vsftpd 2121 / sshd 2222:
 

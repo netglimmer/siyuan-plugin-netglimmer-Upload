@@ -81,7 +81,7 @@
 >
 > ⑦**设置补齐**——新增「单文件重试次数（1–6，默认 3）」「并发上传数（默认 0=按协议自动）」「单文件大小上限 MB（默认 64，0=不限制）」「输出调试日志」开关与「已知主机密钥 (SFTP)」一栏（显示已记录数量 + 清除全部按钮，此前 README 说要在设置里清空却根本没有这个入口）。SFTP 换服务器后可以直接清指纹重连。
 >
-> ⑧**其它**——文档树角标的 MutationObserver 改为优先观察真实树容器（容器不存在时才回退到 body），减少整页 DOM 抖动；插件卸载时关闭未完成的上传会话、隐藏进度面板、停掉改动定时器；界面文案语言匹配做了归一化（`zh-CN`、`zh_CN_` 之类都能落到正确字典，缺失键回退英文）；清掉了 8 条从未被引用的死文案键；打包元数据修正——`backends` 改为空（本插件是纯前端，没有内核侧代码）、`frontends` 用真实存在的 `desktop` / `desktop-window`（原先的 `desktop-store`、`desktop-linux` 不是合法取值）、补出 `readme.default` 指向的英文 `README.md`（此前该文件不存在，包里没有）。
+> ⑧**其它**——文档树角标的 MutationObserver 改为优先观察真实树容器（容器不存在时才回退到 body），减少整页 DOM 抖动；插件卸载时关闭未完成的上传会话、隐藏进度面板、停掉改动定时器；界面文案语言匹配做了归一化（`zh-CN`、`zh_CN_` 之类都能落到正确字典，缺失键回退英文）；清掉了 8 条从未被引用的死文案键；打包元数据修正——`backends` 改为空（本插件是纯前端，没有内核侧代码）、`frontends` 用真实存在的 `desktop` / `desktop-window`（原先的 `desktop-store`、`desktop-linux` 不是合法取值）、补出 `readme.default` 指向的英文 `README.md`（此前该文件不存在，包里没有）；新增集市卡片图标 `icon.png`（思源只认插件根目录下的这个文件名，此前卡片一直是紫色商店占位图）。
 >
 > ⑨**新回归顺手抓出的三个真 bug**（都不是「理论上可能」，是测出来才发现的）：
 >
@@ -174,6 +174,8 @@ siyuan-plugin-netglimmer-Publish/
 ├── build.js                     ← 拼装脚本（只用 node 自带 fs，无 npm 依赖）
 ├── index.js                     ← 产物：src/core.js + 三段 vendored 拼回的单文件
 ├── plugin.json
+├── icon.png                     ← 集市卡片图标（512×512 RGBA，由 tools/make-icon.py 生成）
+├── tools/make-icon.py           ← 零依赖画图标（纯 python，无 PIL/cairosvg；改配色改这里）
 └── i18n/{zh_CN,en_US}.json      ← 由 src/core.js 内嵌字典生成（键序一致、两份键集必须相同）
 ```
 
@@ -191,7 +193,8 @@ node build.js --check  # 只校验 src/ 内部一致性：标记与文件是否�
 - `src/core.js` 里的 `/* @@VENDOR:名字@@ … */` 是拼装标记（注释形式，运行时是空语句）；`src/vendored/*.js` 里 `/* @@SEGMENT-BEGIN@@ */` 之后的内容会被原样拼回，**首尾不要增删空行**，否则 `--verify` 会失败。
 - 为什么把这三段搬出去：`index-html.js` / `gbk-table.js` 里有多条上万字符级的超长行（GBK 表那一行 70267 字符）。留在主文件里会让每次 grep、diff、代码审阅都被污染——搬走后 `src/core.js` 3741 行里最长行只有 372 字符，一条超过 500 字符的行都没有。
 - 同步官方前端代码时（思源升级后 `buildIndexHtml` 相关实现可能变化）：先在思源里手动「导出 → HTML (SiYuan)」拿一份基准，再改 `src/vendored/index-html.js`，改完必须让发布产物的全量字节校验（`publish` 第 6.5 步，或本地 `run.js` / `run-multi.js` 回归）通过——这个插件的立身之本是「与手动导出逐字节一致」，不是「差不多就行」。
-- 打包发布：`node build.js && node build.js --verify`，然后把 `index.js`、`plugin.json`、`README.md`（英文，`readme.default` 指向它，缺了会在插件详情里显示为空白）、`README_zh_CN.md`、`i18n/` 压成 zip（不要把 `src/`、`build.js` 放进插件包，思源用不到）。`plugin.json` 的 `backends` 必须为空（本插件没有内核侧代码）、`frontends` 只能用思源真实存在的取值（`desktop` / `desktop-window` / `browser-desktop` / `browser-mobile` / `mobile` / `all`），`desktop-store`、`desktop-linux` 这类是无效值。
+- 打包发布：`node build.js && node build.js --verify`，然后把 `index.js`、`plugin.json`、`icon.png`、`README.md`（英文，`readme.default` 指向它，缺了会在插件详情里显示为空白）、`README_zh_CN.md`、`i18n/` 压成 zip（不要把 `src/`、`build.js` 放进插件包，思源用不到）。`plugin.json` 的 `backends` 必须为空（本插件没有内核侧代码）、`frontends` 只能用思源真实存在的取值（`desktop` / `desktop-window` / `browser-desktop` / `browser-mobile` / `mobile` / `all`），`desktop-store`、`desktop-linux` 这类是无效值。
+- 集市卡片图标：思源 3.8.6 只看**插件根目录下的 `icon.png`**——内核 `getInstalledPlugin` 在文件存在时才把 `iconURL` 填成 `/plugins/<插件目录名>/icon.png?v=<时间戳>`，前端拿它当 `<img src>`；文件不存在或加载失败，卡片就退回紫色商店占位图（实测：往目录里丢一个 `icon.png`，接口立刻开始返回该地址，`cmp` 校验返回字节与本地文件一致）。`plugin.json` 里**没有**图标字段，写 `icon` 也不会被读。图标由 `python3 tools/make-icon.py` 生成（512×512 RGBA，约 12 KB；脚本零依赖，自带浅/深色与 64px 缩略预览，用于确认小尺寸下仍读得出「文档 + 上传」）；打包脚本会校验它是正方形、带透明通道、边长在 256–1024、且不超过 60 KB。
 - i18n 两份 JSON 是从 `src/core.js` 内嵌字典生成的，手改其中一份会在下次生成时被覆盖；新增文案请同时补 `zh_CN` 与 `en_US` 两处，并保证键集一致（回归脚本会断言）。
 
 回归入口（`/root/harness/`，需要本地起着思源内核 16806 与 vsftpd 2121 / sftp 2222）：
