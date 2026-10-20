@@ -52,6 +52,22 @@ function assemble() {
 }
 
 const built = assemble();
+/* 拼装后立刻做一次语法检查：这类错误（三元里多打一个分号）不查出来，
+ * 写进 index.js 后要到 require 时才炸，报错位置还指向构建产物，白绕一圈。
+ * 用 new Function 而不是 vm.Script：插件产物是 CommonJS，函数体语义与模块顶层一致。 */
+try {
+  new Function(built);
+} catch (e) {
+  const line = /anonymous function>:1:(\d+)/.exec(e.stack || "") || [];
+  console.error("语法检查失败（index.js 没有写出）：" + e.message);
+  if (line[1]) {
+    const n = Number(line[1]);
+    const ls = built.split("\n");
+    console.error("  第 " + n + " 行: " + (ls[n - 1] || "").trim().slice(0, 160));
+    console.error("  上一行   : " + (ls[n - 2] || "").trim().slice(0, 160));
+  }
+  process.exit(1);
+}
 const args = process.argv.slice(2);
 if (args.includes("--check")) {
   console.log("src/ 结构一致：core.js + " + fs.readdirSync(VDIR).join(", "));

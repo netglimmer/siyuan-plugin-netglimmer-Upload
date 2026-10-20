@@ -1,7 +1,7 @@
 {
-  "name": "siyuan-plugin-netglimmer-Publish",
+  "name": "siyuan-plugin-netglimmer-Upload",
   "author": "取舍",
-  "version": "0.9.12",
+  "version": "0.9.31",
   "minAppVersion": "3.8.0",
   "backends": [],
   "frontends": [
@@ -9,12 +9,12 @@
     "desktop-window"
   ],
   "displayName": {
-    "default": "Netglimmer Publish",
-    "zh_CN": "Netglimmer 发布"
+    "default": "Netglimmer Upload",
+    "zh_CN": "Netglimmer 上传"
   },
   "description": {
-    "default": "Publish a document as a byte-identical SiYuan HTML folder to WebDAV / FTP / SFTP / a local folder, with incremental upload, dry run, publish dashboard, change detection and unpublish.",
-    "zh_CN": "一键将文档以「HTML (SiYuan)」格式发布到 WebDAV / FTP / SFTP 服务器或本地目录：增量上传、试算、发布看板、改动检测、重新发布与取消发布；双链、块嵌入与图片资产全部保留。"
+    "default": "Upload a document to WebDAV / FTP / SFTP / a local folder, in one of three export formats: a byte-identical SiYuan HTML folder (highest fidelity), Markdown plus the assets its body references, or a single self-contained Word (.docx) file. Incremental upload, dry run, an upload dashboard, change detection and remote-folder cleanup. It uploads files; serving them as a website is your server's job.",
+    "zh_CN": "一键将文档上传到 WebDAV / FTP / SFTP 服务器或本地目录，导出格式三档可选：「HTML (SiYuan)」整页（还原度最高，自带运行时）、「Markdown」正文 + 它真正引用到的资源、「Word (.docx)」单个自包含文件（图片内嵌）。增量上传、试算、上传看板、改动检测、删除远端文件；双链、块嵌入与图片资产全部保留。本插件负责把文件传上去，把这个目录当站点对外提供是你服务器的事。"
   },
   "readme": {
     "default": "README.md",
@@ -24,11 +24,16 @@
     "webdav",
     "ftp",
     "sftp",
+    "upload",
+    "上传",
     "publish",
-    "html",
     "发布",
+    "html",
+    "markdown",
     "本地",
     "增量",
-    "大纲"
+    "大纲",
+    "word",
+    "docx"
   ]
 }

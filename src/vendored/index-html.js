@@ -7,6 +7,15 @@
  *     改完必须让 build.js --verify 与 run-multi/run.js 的全量字节校验都通过。
  *  3) 分隔行（SEGMENT-BEGIN）之后到文件末尾的内容会被原样拼回，
  *     行首行尾不要增删空行——build.js --verify 依赖字节级还原。
+ *  4) 唯一允许的差异是「插值转义」：模板里凡是把外部字符串拼进 HTML/JS 的地方
+ *     （标题、lang/主题/图标名、代码块主题名、plantUML 地址），一律过
+ *     htmlTextEsc / htmlAttrEsc / jsStrEsc（core.js 里的三个纯函数），版本号
+ *     在 buildIndexHtml 入口按白名单收一次格式。官方模板是原样拼接的，
+ *     于是「含特殊字符的标题」这一类输入下我们的字节和官方不同——这是有意的：
+ *     文档标题是用户随手敲的，花瓣主题名是下载来的，原样插进 <title> 就是
+ *     一条从「改文档标题」到「在每个访问发布页的人浏览器里执行 JS」的通路。
+ *     正常字符串（字母数字空格中文标点）过三个函数都是恒等，字节不受影响；
+ *     新增转义点前先想清楚它属于哪种上下文，别把 content 正文也转了（那是 HTML）。
  */
 /* @@SEGMENT-BEGIN@@ */
 /* =====================================================================
@@ -38,7 +47,7 @@ ${we.join(`
   const FontCSS = (function () {
 const u=X=>{const _e=X.map(ae=>CSS.escape(ae.family)).join(", ");return _e?`
 :root:root { --b3-font-family: var(--b3-font-family-emoji-reset), ${_e}, var(--b3-font-family-default, sans-serif) }
-body, button, input, select, textarea { font-weight: ${X[0].weight||400} }`:""},c="appearance/fonts/Noto-COLRv1-2.051/Noto-COLRv1.woff2",t="U+200d, U+2640, U+2642, U+fe0f, U+1f3fb-1f3ff, U+1f430, U+1f468-1f469, U+1f46f, U+1f6d8, U+1f93c, U+1f9d1, U+1fa70, U+1fa8a, U+1fa8e, U+1fac8, U+1facd, U+1faea, U+1faef",i="U+25fd-25fe, U+2614-2615, U+2648-2653, U+267f, U+2693, U+26a1, U+26aa-26ab, U+1f0cf, U+1f311-1f318, U+1f42d-1f42e, U+1f431, U+1f435, U+1f600-1f64f",_=(X,_e)=>{let ae;return X==="apple"?ae=`@font-face {
+body, button, input, select, textarea { font-weight: ${numVal(X[0].weight||400,400,1,1000)} }`:""},c="appearance/fonts/Noto-COLRv1-2.051/Noto-COLRv1.woff2",t="U+200d, U+2640, U+2642, U+fe0f, U+1f3fb-1f3ff, U+1f430, U+1f468-1f469, U+1f46f, U+1f6d8, U+1f93c, U+1f9d1, U+1fa70, U+1fa8a, U+1fa8e, U+1fac8, U+1facd, U+1faea, U+1faef",i="U+25fd-25fe, U+2614-2615, U+2648-2653, U+267f, U+2693, U+26a1, U+26aa-26ab, U+1f0cf, U+1f311-1f318, U+1f42d-1f42e, U+1f431, U+1f435, U+1f600-1f64f",_=(X,_e)=>{let ae;return X==="apple"?ae=`@font-face {
   font-family: "Emojis Additional";
   src: url(${_e}${c}) format("woff2");
   unicode-range: ${t}, U+1fae9, U+1fac6, U+1fabe, U+1fadc, U+e50a, U+1fa89, U+1fadf, U+1f1e6-1f1ff, U+1fa8f;
@@ -118,7 +127,7 @@ const f="SiYuanCustomFont-";let r;const C=new Map,u=new Map,c=()=>["docker","and
   font-family: "${N.family}";
   src: url("${N.url}");
   font-style: normal;
-  font-weight: ${N.weight};
+  font-weight: ${numVal(N.weight||400,400,1,1000)};
   font-display: swap;
 }`},ee=N=>N&&Z(N.id)&&N.family===f+N.id,Z=N=>/^[a-f0-9]{64}$/.test(N);
     return { embed: M };
@@ -149,11 +158,11 @@ const f="SiYuanCustomFont-";let r;const C=new Map,u=new Map,c=()=>["docker","and
     const ue = (X,_e,ae)=>new Promise((U,Q)=>{var re=Re=>{try{me(ae.next(Re))}catch(se){Q(se)}},Le=Re=>{try{me(ae.throw(Re))}catch(se){Q(se)}},me=Re=>Re.done?U(Re.value):Promise.resolve(Re.value).then(re,Le);me((ae=ae.apply(X,_e)).next())});
     const V=(X=!0,_e="../../../")=>ue(void 0,null,function*(){var ae,U;const Q=(0,O.vg)().customAppearance,re=Q?window.siyuan.config.appearance.globalFontFamilies||[]:[],Le=Q?window.siyuan.config.editor.fontFamilies||[]:[],me=Q?window.siyuan.config.editor.codeFontFamilies||[]:[];let Re="";if(Q)try{const vt=yield(0,p.WT)();Re=(0,p.RN)(vt)}catch(vt){console.error("load inline styles error: "+vt),Re=(0,p.RN)()}X&&Q&&(yield(0,C.LL)([...re,...Le,...me]));const se=(0,o.cX)()||(0,o.bh)()||(0,o.mU)()?"apple":(yield(0,o.xx)())?"windows11":"other";let Ce=_(se,_e);Ce+=u(re),X||(Ce+=`
 `+(yield(0,C.Qb)([...re,...Le,...me])));const Ae=Le.map(vt=>CSS.escape(vt.family)).join(", "),De=(ae=Le[0])==null?void 0:ae.weight,et=me.map(vt=>CSS.escape(vt.family)).join(", "),Ve=et?`var(--b3-font-family-emoji-reset), ${et}, var(--b3-font-family-code)`:"var(--b3-font-family-code)",lt=((U=me[0])==null?void 0:U.weight)||400;if(Ce+=`
-:root { --b3-font-size-editor: ${window.siyuan.config.editor.fontSize}px; --b3-font-family-editor: ${Ae||"var(--b3-font-family-protyle)"}; --b3-font-family-editor-code: ${Ve}; --b3-font-weight-editor-code: ${lt} }
+:root { --b3-font-size-editor: ${numVal(window.siyuan.config.editor.fontSize,16,1,300)}px; --b3-font-family-editor: ${Ae||"var(--b3-font-family-protyle)"}; --b3-font-family-editor-code: ${Ve}; --b3-font-weight-editor-code: ${numVal(lt,400,1,1000)} }
 .b3-typography code:not(.hljs), .protyle-wysiwyg span[data-type~=code] { font-variant-ligatures: ${window.siyuan.config.editor.codeLigatures?"normal":"none"} }
 .b3-typography:not(.b3-typography--default) code:not(.hljs), .protyle-wysiwyg span[data-type~=code] { font-family: var(--b3-font-family-editor-code); font-weight: var(--b3-font-weight-editor-code) }${window.siyuan.config.editor.justify?`
 .protyle-wysiwyg [data-node-id] { text-align: justify }`:""}`,Ae&&(Ce+=`
-.b3-typography:not(.b3-typography--default), .protyle-wysiwyg, .protyle-title {${De?`font-weight: ${De};`:""}font-family: var(--b3-font-family-emoji-reset), var(--b3-font-family-editor), var(--b3-font-family)}`),"ontouchend"in document&&(Ce+=`
+.b3-typography:not(.b3-typography--default), .protyle-wysiwyg, .protyle-title {${De?`font-weight: ${numVal(De,400,1,1000)};`:""}font-family: var(--b3-font-family-emoji-reset), var(--b3-font-family-editor), var(--b3-font-family)}`),"ontouchend"in document&&(Ce+=`
 .b3-menu .b3-menu__action {opacity: 0.68;}`),Ce+=Re?`
 `+Re:"",X){const vt=document.getElementById("siyuanStyle");if(vt)vt.innerHTML=Ce;else{const pt=document.getElementById("pluginsStyle");pt?pt.insertAdjacentHTML("beforebegin",`<style id="siyuanStyle">${Ce}</style>`):document.head.insertAdjacentHTML("beforeend",`<style id="siyuanStyle">${Ce}</style>`)}}return Ce});
     return V;
@@ -172,7 +181,7 @@ const f="SiYuanCustomFont-";let r;const C=new Map,u=new Map,c=()=>["docker","and
   }
   function iconScripts(Q) {
     return (["litheness"].includes(window.siyuan.config.appearance.icon) ? "" : `<script src="${Q}appearance/icons/litheness/icon.js?v=${VERSION()}"><\/script>`) +
-      `<script src="${Q}appearance/icons/${window.siyuan.config.appearance.icon}/icon.js?v=${VERSION()}"><\/script>`;
+      `<script src="${Q}appearance/icons/${htmlAttrEsc(window.siyuan.config.appearance.icon)}/icon.js?v=${VERSION()}"><\/script>`;
   }
   function snippetStyles() {
     let ae = "";
@@ -195,31 +204,41 @@ const f="SiYuanCustomFont-";let r;const C=new Map,u=new Map,c=()=>["docker","and
   function VERSION() { return _version; }
 
   async function buildIndexHtml(name, content, version) {
-    _version = version;
+    /* 内核版本号只可能是 "3.8.6" 这类短标记：按白名单过一遍，不合规就整串丢弃。
+     * 它被拼进十几处 href/注释里，逐处转义会把这段移植代码改得没法对照官方源码，
+     * 而在入口收一次格式，正常导出的字节完全不变。
+     * 注意两处都要收：_version 只喂 VERSION()（图标脚本的 ?v=），模板正文那些 ?v= 读的是
+     * L.Constants.SIYUAN_VERSION——漏掉后者等于白名单形同虚设（回归里脏版本号会红）。 */
+    const VER = /^[0-9A-Za-z][0-9A-Za-z._-]{0,31}$/.test(String(version || "")) ? String(version) : "";
+    _version = VER;
     const ae = { data: { name, content } };
     const Q = "";
     const re = { type: "html" };
-    const L = { Constants: { SIYUAN_VERSION: version } };
+    const L = { Constants: { SIYUAN_VERSION: VER } };
     let me = window.siyuan.config.appearance.themeLight, Re = 0;;
     ["html", "htmlmd"].includes(re.type) && window.siyuan.config.appearance.mode === 1 && (me = window.siyuan.config.appearance.themeDark, Re = 1);
     const se = window.siyuan.config.appearance.mode === 1 && window.siyuan.config.appearance.themeDark === "midnight" || window.siyuan.config.appearance.mode === 0 && window.siyuan.config.appearance.themeLight === "daylight";
     let Ce = "";
-    se || (Ce = `<link rel="stylesheet" type="text/css" id="themeStyle" href="${Q}appearance/themes/${me}/theme.css?${L.Constants.SIYUAN_VERSION}"/>`);
+    se || (Ce = `<link rel="stylesheet" type="text/css" id="themeStyle" href="${Q}appearance/themes/${htmlAttrEsc(me)}/theme.css?${L.Constants.SIYUAN_VERSION}"/>`);
     const De = false, et = { js: "", css: "" };   /* LA()/r5() 仅在 PDF 打印分支生效，HTML 导出恒为 false */
+    /* 与官方模板的唯一一处视口差异（移动端适配）：官方导出的 index.html 写的是
+       width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0——
+       后面那两项把页面双指缩放整个关掉了，手机上正文小字只能靠系统缩放去救（无障碍问题），
+       也和我们给图片灯箱加的触摸缩放抢手势。这里只留 device-width + 1 倍起始，缩放交还读者。 */
     const Ve = `<!DOCTYPE html>
-<html lang="${window.siyuan.config.appearance.lang}" data-theme-mode="${themeMode()}" data-light-theme="${window.siyuan.config.appearance.themeLight}" data-dark-theme="${window.siyuan.config.appearance.themeDark}">
+<html lang="${htmlAttrEsc(window.siyuan.config.appearance.lang)}" data-theme-mode="${themeMode()}" data-light-theme="${htmlAttrEsc(window.siyuan.config.appearance.themeLight)}" data-dark-theme="${htmlAttrEsc(window.siyuan.config.appearance.themeDark)}">
 <head>
     <base href="${Q}">
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <meta name="mobile-web-app-capable" content="yes"/>
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <link rel="stylesheet" type="text/css" id="baseStyle" href="${Q}stage/build/export/base.css?v=${L.Constants.SIYUAN_VERSION}"/>
-    <link rel="stylesheet" type="text/css" id="themeDefaultStyle" href="${Q}appearance/themes/${me}/theme.css?v=${L.Constants.SIYUAN_VERSION}"/>
+    <link rel="stylesheet" type="text/css" id="themeDefaultStyle" href="${Q}appearance/themes/${htmlAttrEsc(me)}/theme.css?v=${L.Constants.SIYUAN_VERSION}"/>
     <script src="${Q}stage/protyle/js/protyle-html.js?v=${L.Constants.SIYUAN_VERSION}"><\/script>
     ${Ce}
-    <title>${ae.data.name}</title>
+    <title>${htmlTextEsc(ae.data.name)}</title>
     <!-- Exported by SiYuan v${L.Constants.SIYUAN_VERSION} -->
     <style>
         body {font-family: var(--b3-font-family);background-color: var(--b3-theme-background);color: var(--b3-theme-on-background)}
@@ -239,13 +258,13 @@ ${iconScripts(Q)}
     ${et.js}
     window.siyuan = {
       config: {
-        appearance: { mode: ${Re}, codeBlockThemeDark: "${window.siyuan.config.appearance.codeBlockThemeDark}", codeBlockThemeLight: "${window.siyuan.config.appearance.codeBlockThemeLight}" },
+        appearance: { mode: ${Re}, codeBlockThemeDark: "${jsStrEsc(window.siyuan.config.appearance.codeBlockThemeDark)}", codeBlockThemeLight: "${jsStrEsc(window.siyuan.config.appearance.codeBlockThemeLight)}" },
         editor: { 
           codeLineWrap: true,
-          fontSize: ${window.siyuan.config.editor.fontSize},
-          codeLigatures: ${window.siyuan.config.editor.codeLigatures},
-          plantUMLServePath: "${window.siyuan.config.editor.plantUMLServePath}",
-          codeSyntaxHighlightLineNum: ${window.siyuan.config.editor.codeSyntaxHighlightLineNum},
+          fontSize: ${numVal(window.siyuan.config.editor.fontSize,16,1,300)},
+          codeLigatures: ${!!window.siyuan.config.editor.codeLigatures},
+          plantUMLServePath: "${jsStrEsc(window.siyuan.config.editor.plantUMLServePath)}",
+          codeSyntaxHighlightLineNum: ${!!window.siyuan.config.editor.codeSyntaxHighlightLineNum},
           katexMacros: decodeURI(\`${encodeURI(window.siyuan.config.editor.katexMacros)}\`),
         }
       },

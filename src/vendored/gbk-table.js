@@ -41,3 +41,20 @@ function gbkEncode(sg) {
   }
   return out;
 }
+/* 这个名字里有哪些字符在 GBK 表里没有码位（也就是 gbkEncode 会写成 "?" 的那些）。
+ * 单独把它拿出来，是因为「不可映射 → ?」这条兜底本身会制造更糟的错：
+ * 一篇文档的资产里同时有 「🎈.png」和「🎉.png」（或两个表外生僻字），GBK 会话里
+ * 两个名字都编成 「?.png」——远端只剩一个文件，另一个永久 404，而本地清单和校验
+ * 都以为两个都传上去了（尺寸比的是同一个 "?"). 与其悄悄合并，不如在开口处硬失败，
+ * 让用户改文件名或让服务器打开 UTF8。返回字符数组，报错时把肇事字符原样列出。
+ * 判定口径与 gbkEncode 严格一致：≤0xFF 原样通过，其余查表，表里没有就算不可映射。 */
+function gbkUnmappable(sg) {
+  const t = gbkTable();
+  const bad = [];
+  for (const ch of String(sg == null ? "" : sg)) {
+    const cp = ch.codePointAt(0);
+    if (cp <= 0xff) continue;
+    if (!t.get(cp)) bad.push(ch);
+  }
+  return bad;
+}
