@@ -23,7 +23,7 @@ const HISTORY_KEY = "history";
 
 /* 版本号只写这一处：加载日志、设置页底部展示都从这里取。
  * 必须与 plugin.json 的 version 一致——run-settings.js 有断言，漏改会在回归里红。 */
-const PLUGIN_VERSION = "0.9.31";
+const PLUGIN_VERSION = "0.9.32";
 /* 导出格式档位（三档，全部实测过内核 3.8.6 的接口）：
  *   html = 思源自己那套静态页整包（index.html + stage/appearance 运行时 + 引用的资源）
  *   md   = 内核「导出 → Markdown」的正文（<文档名>.md）+ 它引用到的资源
@@ -267,8 +267,18 @@ const I18N = {
     verifyNoRead: "该服务器读不回内容，可能禁止下载",
     verifyBudget: "逐个确认已达数量上限",
     verifySkipSome: "远端有 {n} 个文件未能逐个校验（{w}），本次上传未做完整校验",
-    dashSelAll: "全选可删除项",
+    dashSelAll: "全选（筛选结果 {n} 条）",
     dashSelNone: "取消勾选",
+    dashSelFilteredTip: "作用范围是整个筛选结果——包括翻页翻不到的那几页。远端还挂着的行进不了这个清单：先「删除远端文件」，才谈得上删它的记录",
+    dashSelPageTip: "勾上 / 取消当前这一页里可删的行。远端还挂着的行不给勾（要先「删除远端文件」）；要一次勾满整个筛选结果（含其它页），用上方工具条的「全选」",
+    dashPageInfo: "第 {a}–{b} 条 / 共 {N} 条",
+    dashPageOf: "第 {p} / {n} 页",
+    dashPagePrev: "上一页",
+    dashPageNext: "下一页",
+    dashPageSizeLabel: "每页",
+    dashPageAll: "全部",
+    dashPageTip: "翻页只决定这一屏画多少行：筛选、排序、勾选与批量操作的作用范围都是整个筛选结果，不是当前这一页",
+    dashPageSizeTip: "每页条数记在这台浏览器里（与列宽、排序同一套记忆口径），不随笔记同步",
     dashDelSel: "删除所选 {n} 条",
     dashDelSelZero: "删除所选记录",
     dashDelOne: "删除记录",
@@ -385,7 +395,7 @@ const I18N = {
     dashMergeTag: " · 含子文档",
     publishedBadgeTip: "该文档已通过 Netglimmer 上传（点击尝试打开记录里的远端地址；能不能打开取决于服务器有没有把这个目录当站点提供）",
     changedBadgeTip: "已上传过，但上传后正文又有改动（点击尝试打开远端地址；右键可重新上传）",
-    publishChanged: "Netglimmer 一键上传（检测到改动，建议重新上传）",
+    publishChangedMenu: "检测到改动，重新上传",
     publishSummaryOk: "已上传：{url}｜本次传输 {sent} 个文件 / {sentB}，复用服务器上 {reused} 个运行时文件，共 {dur} 秒",
     uploadFailAt: "部分文件上传失败（已重试仍不行）",
     uploadFailMore: "另有 {n} 个文件未成功",
@@ -538,8 +548,18 @@ const I18N = {
     verifyNoRead: "the server will not read content back, downloads may be blocked",
     verifyBudget: "per-file confirmation hit its cap",
     verifySkipSome: "{n} remote files could not be confirmed one by one ({w}); this upload was not fully verified",
-    dashSelAll: "Select deletable",
+    dashSelAll: "Select all ({n} filtered)",
     dashSelNone: "Clear selection",
+    dashSelFilteredTip: "Scope is the whole filtered result — including rows the current page does not show. Records whose files are still on the server never enter this list: delete the remote files first, then their record.",
+    dashSelPageTip: "Tick / untick every deletable row on this page. Rows still live on the server cannot be ticked (delete their remote files first); to tick the whole filtered result across pages, use \"Select all\" in the toolbar above.",
+    dashPageInfo: "Items {a}–{b} of {N}",
+    dashPageOf: "Page {p} / {n}",
+    dashPagePrev: "Previous",
+    dashPageNext: "Next",
+    dashPageSizeLabel: "Per page",
+    dashPageAll: "All",
+    dashPageTip: "Paging only decides how many rows this screen draws: filtering, sorting, ticks and the bulk actions all apply to the whole filtered result, not just this page.",
+    dashPageSizeTip: "The page size is remembered in this browser (same mechanism as column widths and sorting); it does not sync with the notebook.",
     dashDelSel: "Delete {n} selected",
     dashDelSelZero: "Delete selected",
     dashDelOne: "Delete record",
@@ -652,7 +672,7 @@ const I18N = {
     dashMergeTag: " · with sub-docs",
     publishedBadgeTip: "This document has been uploaded via Netglimmer (click to try opening the remote address in its record; whether that works depends on the server actually serving the folder as a site)",
     changedBadgeTip: "Uploaded, but the document changed afterwards (click to try opening the remote address; right-click to re-upload)",
-    publishChanged: "Netglimmer One-Click Upload (changes detected — re-upload recommended)",
+    publishChangedMenu: "Changes detected — re-upload",
     publishSummaryOk: "Uploaded: {url} | sent {sent} files / {sentB}, reused {reused} runtime files already on the server, {dur}s total",
     uploadFailAt: "Some files failed to upload (retried)",
     uploadFailMore: "{n} more files also failed",
@@ -1233,6 +1253,42 @@ const DASH_FLEX_COL = 4;   // 唯一会吃掉剩余空间的那列
 /* 看板排序：只有这五列有比得出来的口径（详情是错误原文、操作是按钮，排序没意义）。 */
 const DASH_SORT_KEYS = ["time", "doc", "proto", "status", "changed"];
 const DASH_VIEW_KEY = "netglimmer-dash-view";
+/* 看板翻页：每页条数是「习惯」而不是临时意图，所以和排序一样记在 localStorage 里。
+ * 0 ＝ 全部（不分页），给记录不多、或者就是想把一屏看全的人留一条路。 */
+const DASH_PAGE_SIZES = [10, 20, 50, 100, 0];
+const DASH_PAGE_SIZE_DEFAULT = 20;
+const DASH_PAGE_KEY = "netglimmer-dash-page";
+
+/* 只认档位表里的数：没存过（null / 空串）、存坏了一律退回默认。
+ * 这里必须先挡住 null——Number(null) 是 0，而 0 恰好是「全部」那一档，
+ * 顺手 Number 一下会把「这台浏览器还没选过」读成「每页无限条」。
+ * 纯空白同理：Number(" ") 也是 0，所以先 trim，空串按没存过处理。 */
+function parseDashPageSize(raw) {
+  if (raw === null || raw === undefined) return DASH_PAGE_SIZE_DEFAULT;
+  const s = String(raw).trim();
+  if (!s) return DASH_PAGE_SIZE_DEFAULT;
+  const n = Number(s);
+  return Number.isFinite(n) && DASH_PAGE_SIZES.indexOf(n) >= 0 ? n : DASH_PAGE_SIZE_DEFAULT;
+}
+
+function dashPageCount(total, size) {
+  if (!size || total <= 0) return 1;
+  return Math.max(1, Math.ceil(total / size));
+}
+
+/* 从「已筛选已排序」的清单里切出这一页。页码越界一律夹回来（删到最后一条、
+ * 或者换了筛选条件之后停在第 7 页，都不该是空白一屏）；size=0 时整份原样返回。 */
+function dashPageSlice(items, page, size) {
+  const list = items || [];
+  const pages = dashPageCount(list.length, size);
+  const p = Math.min(Math.max(1, Number(page) || 1), pages);
+  if (!size) {
+    return { rows: list, page: 1, pages: 1, from: list.length ? 1 : 0, to: list.length };
+  }
+  const start = (p - 1) * size;
+  const rows = list.slice(start, start + size);
+  return { rows, page: p, pages, from: rows.length ? start + 1 : 0, to: start + rows.length };
+}
 /* 「结果」列的次序按来找问题的人的直觉排：已删除（线上还挂着孤儿目录）→ 失败 →
  * 已取消发布 → 成功。用字符串比 would 把 deleted 排到 fail 后面（字母序）。 */
 const DASH_STATUS_ORDER = { deleted: 0, fail: 1, unpub: 2, ok: 3 };
@@ -1521,6 +1577,46 @@ function dashColNeeds(grid, cols) {
           + (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
         if (w > need[i]) need[i] = Math.ceil(w);
       }
+    }
+    /* 表头也要量一次。列名是静态文案，但它是这一列里唯一"排不下就压到邻列去"的东西：
+     * th 只有 white-space:nowrap、没有 overflow:hidden，英文字排不下不会变省略号，而是
+     * 直接盖到隔壁那一列的表头上（实测英文「Protocol」在 73px 的协议列上越过右内边距 9px，
+     * 压住「Result」）。全选主框也长在时间表头里，它加出来的那十几像素同理得算。
+     * 量法与格子不一样：列宽把手是**故意** position:absolute; right:-4px 压在两列边界上的
+     * （不压边界就抓不住），把它算进来等于每列地板抬成"当前列宽 + 4"、越量越宽，
+     * 所以只认非绝对定位的子节点和文字本身。 */
+    const ths = [];
+    for (let i = 0; i < kids.length && ths.length < n; i++) {
+      const el = kids[i];
+      if (el.classList && el.classList.contains("vd-dash-th")) ths.push(el);
+    }
+    for (let i = 0; i < ths.length && i < n; i++) {
+      if (!c[i].nowrap) continue;
+      const th = ths[i];
+      const cs = (typeof getComputedStyle === "function" && getComputedStyle(th)) || {};
+      let left = Infinity;
+      let right = -Infinity;
+      for (let k = 0; k < th.childNodes.length; k++) {
+        const nd = th.childNodes[k];
+        if (nd.nodeType === 3) {
+          if (!nd.textContent || !nd.textContent.trim()) continue;
+          const rg = document.createRange();
+          rg.selectNodeContents(nd);
+          const rc = rg.getBoundingClientRect();
+          if (rc.width <= 0) continue;
+          left = Math.min(left, rc.left); right = Math.max(right, rc.right);
+        } else if (nd.nodeType === 1) {
+          const st = (typeof getComputedStyle === "function" && getComputedStyle(nd)) || {};
+          if (st.position === "absolute" || st.position === "fixed") continue;
+          const rc = nd.getBoundingClientRect();
+          if (rc.width <= 0) continue;
+          left = Math.min(left, rc.left); right = Math.max(right, rc.right);
+        }
+      }
+      if (left === Infinity) continue;
+      const w = right - left + (parseFloat(cs.paddingLeft) || 0)
+        + (parseFloat(cs.paddingRight) || 0);
+      if (w > need[i]) need[i] = Math.ceil(w);
     }
   } catch (e) { /* 量不到就当没有：地板退回 DASH_COLS 里那个按语言量的常数 */ }
   return need;
@@ -4077,12 +4173,8 @@ class WebDAVPublishPlugin extends Plugin {
       // 以前对文件夹也给出「发布」入口，点了只在导出那步报一句内核的 not found，
       // 现在直接不给入口——菜单里少一项比给一项注定失败的按钮有用。
       if (String(id).indexOf("/") >= 0) return;
-      // 只保留一个入口按钮；是否「含子文档」由设置里的开关决定（默认开启）
-      menu.addItem({
-        icon: "iconUpload",
-        label: this.changedSet && this.changedSet.has(id) ? this.t("publishChanged") : this.t("publish"),
-        click: () => this.publish(id, this.settings.publishMerge !== false),
-      });
+      // 「一键上传」常驻；上传后又有改动的，多给一条按原记录重传的入口（见 publishMenuItems）
+      this.publishMenuItems(menu, id);
     };
 
     this.eventBus.on("open-menu-doctree", (event) => {
@@ -4099,11 +4191,7 @@ class WebDAVPublishPlugin extends Plugin {
         const d = event.detail || event;
         const id = d.data?.rootID || d.data?.id || d.blockId || d.protyle?.block?.rootId;
         if (!id || !d.menu) return;
-        d.menu.addItem({
-          icon: "iconUpload",
-          label: this.changedSet && this.changedSet.has(id) ? this.t("publishChanged") : this.t("publish"),
-          click: () => this.publish(id, this.settings.publishMerge !== false),
-        });
+        this.publishMenuItems(d.menu, id);
       } catch (e) {
         console.error("[netglimmer-upload] click-editortitleicon", e);
       }
@@ -4184,6 +4272,40 @@ class WebDAVPublishPlugin extends Plugin {
   }
 
   /* ---------- 文档树「已发布」角标 ---------- */
+
+  /* 右键菜单的上传入口（文档树与编辑区标题图标共用这一份）。
+   * 第一项永远在：按当前设置上传。「检测到改动，重新上传」只在 changedSet 认这篇
+   * 上传之后正文又改过时才出现，并且照那条记录当初的协议与「含子文档」口径重传——
+   * 用户右键的是这篇文档，不是顺手把今天的上传参数也改了。
+   * 判不准（没指纹、SQL 查询失败、已取消上传）不给第二项：一个点下去只会把远端
+   * 原样再盖一遍的按钮，在这里只是噪音。 */
+  publishMenuItems(menu, id) {
+    menu.addItem({
+      icon: "iconUpload",
+      label: this.t("publish"),
+      click: () => this.publish(id, this.settings.publishMerge !== false),
+    });
+    if (!this.changedSet || !this.changedSet.has(id)) return;
+    const rec = this.latestOkRec(id);
+    if (!rec) return;
+    menu.addItem({
+      icon: "iconUpload",
+      label: this.t("publishChangedMenu"),
+      click: () => this.publish(id, !!rec.merge, { proto: rec.protocol }),
+    });
+  }
+
+  /* 「这篇文档最近一次成功、且还挂在远端上的上传记录」：直接读 historyCache——
+   * 看板画的就是这一份，另存一张 docId→记录 的映射只会多一处会漂移的状态。
+   * 历史是新→旧，第一条匹配即最新。已取消上传（unpub）的记录不能算：它指向的
+   * 远端目录已经被用户删掉，照它的协议「重新上传」只会在一个空的旧口径上再开一次。 */
+  latestOkRec(id) {
+    const list = this.historyCache || [];
+    for (const r of list) {
+      if (r && r.ok && isLiveRec(r) && String(r.docId) === String(id)) return r;
+    }
+    return null;
+  }
 
   // 从发布历史收集「发布成功」的文档：docId → url，另存 docId → 发布时的改动指纹
   async refreshPublishedSet() {
@@ -6628,9 +6750,13 @@ class WebDAVPublishPlugin extends Plugin {
          * （发布前的非增量清理、改名后的残留清理），旧地址就是 404，pub 也不能再继承，
          * 否则看板上是一行「已发布 + 一个打不开的路径」，而远端只剩半棵目录。 */
         if (!rec.ok && old.ok && !this.oldRootDestroyed(old, rec)) {
-          if (!rec.url && old.url) rec.url = old.url;
           if (!rec.docName && old.docName) rec.docName = old.docName;
-          rec.pub = true; // 仍视为“已发布过”
+          /* 旧记录已经被用户亲手删掉远端（unpub）：那个地址与「线上还挂着」都不存在了。
+           * 继承的话角标会亮、看板给一条打不开的路径，还递上一把「删除远端文件」。 */
+          if (!old.unpub) {
+            if (!rec.url && old.url) rec.url = old.url;
+            rec.pub = true; // 仍视为“已发布过”
+          }
         }
         /* 发布次数：一行会被重复发布覆盖，「这篇到底发过几次、第一次是啥时候」原本看不出来。
          * 只数成功的那几次（失败的覆盖在同一行上，不该算一次发布），首次时间一并留下。 */
@@ -6926,6 +7052,10 @@ class WebDAVPublishPlugin extends Plugin {
       this._dashView = {
         q: "", proto: "", status: "", changedOnly: false, sort: null,
         sel: new Set(),
+        /* 页码是「这次翻到哪儿了」，跟筛选一样是临时意图，不记；
+         * 每页条数是习惯，记在 localStorage（口径同排序方式）。 */
+        page: 1,
+        pageSize: parseDashPageSize(lsRead(DASH_PAGE_KEY)),
       };
       try {
         const raw = lsRead(DASH_VIEW_KEY);
@@ -6954,6 +7084,7 @@ class WebDAVPublishPlugin extends Plugin {
     v.proto = "";
     v.status = "";
     v.changedOnly = false;
+    v.page = 1;
     if (v.sel instanceof Set) v.sel.clear();
   }
 
@@ -6982,7 +7113,11 @@ class WebDAVPublishPlugin extends Plugin {
       return view.sel;
     };
     /* 活的看板状态：表体每次重画都写回这里，骨架上的按钮与计数只读它。 */
-    const st = { ui, list: [], items: [], delItems: [], boxes: [], grid: null, colNeeds: null };
+    const st = {
+      ui, list: [], items: [], delItems: [], boxes: [], grid: null, colNeeds: null,
+      masterBox: null,
+      pageInfo: { rows: [], page: 1, pages: 1, from: 0, to: 0 },
+    };
 
     /* 列宽：默认值之上覆盖「这个浏览器里上次拖出来的结果」（localStorage 按设备/浏览器记，
      * 不随笔记同步）。拖动只改内存里的数组 + 重排网格，松手才落盘。存的是默认值之上那一层，
@@ -7018,9 +7153,17 @@ class WebDAVPublishPlugin extends Plugin {
       const el = document.createElement("div");
       el.className = "vd-dash-th";
       el.textContent = label;
-      /* cursor 写在 cssText 里而不是 el.style.cursor =：浏览器里两者等价，但回归桩件的
+      /* 表头那一行的折不折行跟着**这一列**的口径走：不许折行的四列（时间/协议/结果/操作）
+       * 表头也 nowrap，于是列名 + 排序箭头 + 全选主框排不下时，dashColNeeds 量的是表头
+       * 的内容、地板跟着抬；会折行的三列（文档/详情/改动）表头允许换行——那一列本来就在
+       * 换行，把表头钉成 nowrap 只会让它压到邻列的表头上面去（th 没有 overflow:hidden，
+       * 压下去是真重叠，不是省略号）。
+       * cursor 写在 cssText 里而不是 el.style.cursor =：浏览器里两者等价，但回归桩件的
        * style 是个普通对象，属性式赋值不会进 cssText——写成一串才有唯一断言口径。 */
-      el.style.cssText = "font-weight:600;color:var(--b3-theme-on-surface);padding:6px 8px;border-bottom:1px solid var(--b3-theme-surface-lighter);white-space:nowrap;position:relative;"
+      const colDef = typeof col === "number" ? DASH_COLS[col] : null;
+      el.style.cssText = "font-weight:600;color:var(--b3-theme-on-surface);padding:6px 8px;"
+        + "border-bottom:1px solid var(--b3-theme-surface-lighter);position:relative;"
+        + (colDef && colDef.nowrap ? "white-space:nowrap;" : "white-space:normal;")
         + (sortable ? "cursor:pointer;" : "");
       const key = typeof col === "number" && DASH_COLS[col] ? DASH_COLS[col].key : "";
       const curSort = view.sort || { key: "time", dir: -1 };
@@ -7078,14 +7221,36 @@ class WebDAVPublishPlugin extends Plugin {
     };
 
     /* 勾选态（rowKeyOf → Set）挂在 view 上：表体每次重画都会重建行，靠 DOM 的 checked
-     * 记勾选会在下一帧全丢。每次重画先按「这一屏看得见」把 Set 修剪一遍——看不见的行
-     * 不算勾选，也就不会被「删除所选」偷偷删掉（看不见却偏要删，是最吓人的误删口径）。
+     * 记勾选会在下一帧全丢。每次重画先按「还在当前筛选结果里」把 Set 修剪一遍——
+     * 被筛掉的行不算勾选，也就不会被「删除所选」偷偷删掉（筛完才发现勾了早就不匹配的行，
+     * 是最吓人的误删口径）。跨页保留是「全选（筛选结果 N 条）」的题中之义：它的按钮文字
+     * 和「删除所选 N 条」的确认语都如实报条数，勾着第 3 页的行、在第 1 页点删除，删的就是
+     * 那 N 条——N 里已经把它们算进去了。
      * 线上还挂着的行（isLiveRec）压根不给勾：删它的记录等于扔掉远端目录的线索。
      * 两个批量把手的文案/禁用态就地更新（syncSel），勾一下不重画整张表。 */
     let selAllBtn = null;
     let delBtn = null;
     const allSelected = () => st.delItems.length > 0
       && st.delItems.every((it) => sel().has(rowKeyOf(it.rec)));
+    /* 表头那个主复选框只管「当前这一页」——它长在表头里，管的自然是被表头压住的那些行。
+     * 跨页的全选交给工具条那个按钮，两者的作用范围各自写在 tooltip 上，不靠猜。 */
+    const pageDelItems = () => st.pageInfo.rows.filter((it) => !isLiveRec(it.rec));
+    st.masterBox = document.createElement("input");
+    st.masterBox.type = "checkbox";
+    st.masterBox.className = "vd-dash-sel-master";
+    st.masterBox.style.cssText = "margin:0 8px 0 0;vertical-align:middle;cursor:pointer;";
+    st.masterBox.title = this.t("dashSelPageTip");
+    /* 它长在表头里，而表头整块是排序把手：不拦住冒泡，勾一下顺带把排序翻了，
+     * 排序一翻行就重排，「刚勾的那页」立刻变成另一批行（列宽把手也照样 stopPropagation）。 */
+    st.masterBox.addEventListener("click", (e) => { if (e && e.stopPropagation) e.stopPropagation(); });
+    st.masterBox.addEventListener("change", () => {
+      const on = !!st.masterBox.checked;
+      for (const it of pageDelItems()) {
+        const k = rowKeyOf(it.rec);
+        if (on) sel().add(k); else sel().delete(k);
+      }
+      syncSel();
+    });
     const syncSel = () => {
       if (delBtn) {
         delBtn.disabled = sel().size === 0;
@@ -7095,16 +7260,28 @@ class WebDAVPublishPlugin extends Plugin {
       }
       if (selAllBtn) {
         selAllBtn.disabled = st.delItems.length === 0;
-        selAllBtn.textContent = this.t(allSelected() ? "dashSelNone" : "dashSelAll");
+        selAllBtn.textContent = this.t(allSelected() ? "dashSelNone" : "dashSelAll")
+          .replace("{n}", String(st.delItems.length));
+      }
+      if (st.masterBox) {
+        const page = pageDelItems();
+        const n = page.filter((it) => sel().has(rowKeyOf(it.rec))).length;
+        st.masterBox.disabled = page.length === 0;
+        st.masterBox.checked = page.length > 0 && n === page.length;
+        /* 半选（这一页勾了一部分）必须让框自己说出来：一个显示成「没勾」的全选框，
+         * 点下去会把已勾的悄悄取消掉，谁都不会预期这个结果。 */
+        st.masterBox.indeterminate = n > 0 && n < page.length;
+        st.masterBox.style.cssText = "margin:0 8px 0 0;vertical-align:middle;cursor:"
+          + (page.length ? "pointer;" : "not-allowed;");
       }
       for (const b of st.boxes) if (!b.disabled) b.checked = sel().has(b.vdKey);
     };
 
-    /* 「全选可删除项 / 删除所选 N 条」：只动这份本地清单，一个远端请求都不发。
-     * 全选的作用范围也是当前筛选结果（st.delItems 就是「这一屏里可以删的那些行」），
-     * 而线上还挂着的那几行压根进不了 Set——它们的复选框是 disabled 的，
-     * deleteHistoryRows 里再兜一层，万一被谁绕过 UI 直接调用也删不掉活着的记录。 */
-    selAllBtn = btn(this.t("dashSelAll"), "b3-button b3-button--outline vd-dash-sel-all", () => {
+    /* 「全选（筛选结果 N 条）/ 取消勾选 / 删除所选 N 条」：只动这份本地清单，一个远端请求都不发。
+     * 全选的作用范围是整个筛选结果（跨页），而线上还挂着的那几行压根进不了 Set——
+     * 它们的复选框是 disabled 的，deleteHistoryRows 里再兜一层，
+     * 万一被谁绕过 UI 直接调用也删不掉活着的记录。 */
+    selAllBtn = btn(this.t("dashSelAll").replace("{n}", "0"), "b3-button b3-button--outline vd-dash-sel-all", () => {
       const flip = allSelected();
       for (const it of st.delItems) {
         const k = rowKeyOf(it.rec);
@@ -7112,7 +7289,7 @@ class WebDAVPublishPlugin extends Plugin {
       }
       syncSel();
     });
-    selAllBtn.title = this.t("dashDelSelTip");
+    selAllBtn.title = this.t("dashSelFilteredTip");
     delBtn = btn(this.t("dashDelSelZero"), "b3-button b3-button--outline vd-dash-del-sel", async () => {
       if (!sel().size) return;
       const keys = new Set(sel());
@@ -7211,6 +7388,9 @@ class WebDAVPublishPlugin extends Plugin {
     let qTimer = null;
     qEl.addEventListener("input", () => {
       view.q = qEl.value || "";
+      /* 换了筛选条件却停在第 7 页，看到的就是「一条都没匹配上」的空白表——
+       * 筛选结果一变短，页码必须回到第一页（越界夹取只是兜底，不等于可以留着）。 */
+      view.page = 1;
       if (qTimer) clearTimeout(qTimer);
       qTimer = setTimeout(() => { paint(); }, 260);
     });
@@ -7230,14 +7410,14 @@ class WebDAVPublishPlugin extends Plugin {
       return s;
     };
     const fproto = mkSel("vd-dash-fproto", [{ v: "", t: this.t("dashAllProto") }],
-      (v) => { view.proto = v; });
+      (v) => { view.proto = v; view.page = 1; });
     const fstatus = mkSel("vd-dash-fstatus", [
       { v: "", t: this.t("dashAllStatus") },
       { v: "ok", t: this.t("stOk") },
       { v: "fail", t: this.t("stFail") },
       { v: "unpub", t: this.t("stUnpub") },
       { v: "deleted", t: this.t("dashStDeleted") },
-    ], (v) => { view.status = v; });
+    ], (v) => { view.status = v; view.page = 1; });
     /* 协议下拉的选项跟着记录走（只列出这次真用过的协议），但**节点不换**：
      * 每次重画都重建一遍 option 就够了，换掉 select 会让正打开的下拉盒子凭空消失。 */
     const fillProto = (protos) => {
@@ -7263,7 +7443,7 @@ class WebDAVPublishPlugin extends Plugin {
      * 再靠 type==="checkbox" 从一帧里捞「最后一个」就会捞进行勾选框上。 */
     chgBox.className = "vd-dash-fchanged-box";
     chgBox.checked = !!view.changedOnly;
-    chgBox.addEventListener("change", () => { view.changedOnly = !!chgBox.checked; paint(); });
+    chgBox.addEventListener("change", () => { view.changedOnly = !!chgBox.checked; view.page = 1; paint(); });
     chg.append(chgBox, document.createTextNode(this.t("dashChangedOnly")));
     const counter = document.createElement("div");
     counter.className = "vd-dash-count";
@@ -7366,6 +7546,10 @@ class WebDAVPublishPlugin extends Plugin {
         for (const k of Array.from(sel())) if (!visible.has(k)) sel().delete(k);
       }
       st.delItems = st.items.filter((it) => !isLiveRec(it.rec));
+      /* 页码夹回这一屏真实存在的页数（筛选变短、每页条数改大都靠这一步兜底），
+       * 再把当前这一页要画的行交给建行循环与表头主复选框。 */
+      st.pageInfo = dashPageSlice(st.items, view.page, view.pageSize);
+      view.page = st.pageInfo.page;
       syncFilterUI(list, st.items);
       syncSel();
 
@@ -7411,13 +7595,18 @@ class WebDAVPublishPlugin extends Plugin {
        * 那时才量得到内容宽。 */
       st.grid = grid;
       applyCols();
+      /* 表头主复选框挂在「时间」列表头最前面：那一格是整行里唯一天生空着的头部，
+       * 而勾选框本来就长在时间列（见下面 c1），表头与行对得上，一眼知道它管的是勾选。
+       * 它管的是当前这一页（tooltip 写清），跨页全选交给工具条。 */
+      const thTime = th(this.t("colTime"), 0);
+      thTime.prepend(st.masterBox);
       grid.append(
-        th(this.t("colTime"), 0), th(this.t("colDoc"), 1), th(this.t("colProto"), 2),
+        thTime, th(this.t("colDoc"), 1), th(this.t("colProto"), 2),
         th(this.t("colStatus"), 3), th(this.t("colDetail"), 4, this.t("colDetailTip")), th(this.t("colChanged"), 5),
         th(this.t("colAction"), 6),
       );
 
-      for (const it of st.items) {
+      for (const it of st.pageInfo.rows) {
         const rec = it.rec;
         /* 勾选框挂时间列最前面：那是一行里最不挤的地方，而且七列宽度表（DASH_COLS）
          * 不必为它多开一列——拖宽、排序、记忆全是按七列算的，多一列就多一处要改的口径。
@@ -7638,6 +7827,57 @@ class WebDAVPublishPlugin extends Plugin {
         if (pathRow) grid.append(pathRow);
       }
       body.append(grid);
+      /* 翻页条（右下角）：它只决定「这一屏画多少行」。筛选、排序、勾选与三个批量按钮
+       * 的作用范围仍是整个筛选结果（工具条「全选」的 tooltip 同口径），所以翻到第 3 页
+       * 不会把前两页的勾选洗掉，也不会让「删除所选 N 条」偷偷少删 N 里的谁。
+       * 每页条数是习惯，落盘（跟列宽、排序记在同一个浏览器里，不随笔记同步）；
+       * 页码是这一次浏览的临时意图，不落盘。
+       * 只有一页时 prev/next 照常画出来、置灰：文案位置不随内容条数跳动，
+       * 比「翻到最后一页按钮突然消失」好读，也不会让这一行的高度变来变去。 */
+      const pager = document.createElement("div");
+      pager.className = "vd-dash-pager";
+      pager.style.cssText = "display:flex;gap:8px;align-items:center;justify-content:flex-end;"
+        + "flex-wrap:wrap;padding:10px 2px 2px;color:var(--b3-theme-on-surface-light);font-size:12px;";
+      const pInfo = document.createElement("span");
+      pInfo.className = "vd-dash-page-info";
+      pInfo.textContent = this.t("dashPageInfo").replace("{a}", String(st.pageInfo.from))
+        .replace("{b}", String(st.pageInfo.to)).replace("{N}", String(st.items.length));
+      const goPage = (p) => {
+        const pages = dashPageCount(st.items.length, view.pageSize);
+        const next = Math.min(Math.max(1, p), pages);
+        if (next === view.page) return;
+        view.page = next;
+        paint();
+      };
+      const pPrev = btn(this.t("dashPagePrev"), "b3-button b3-button--outline vd-dash-page-prev",
+        () => goPage(view.page - 1));
+      pPrev.disabled = st.pageInfo.page <= 1;
+      const pNum = document.createElement("span");
+      pNum.className = "vd-dash-page-num";
+      pNum.textContent = this.t("dashPageOf").replace("{p}", String(st.pageInfo.page))
+        .replace("{n}", String(st.pageInfo.pages));
+      const pNext = btn(this.t("dashPageNext"), "b3-button b3-button--outline vd-dash-page-next",
+        () => goPage(view.page + 1));
+      pNext.disabled = st.pageInfo.page >= st.pageInfo.pages;
+      const pSizeLab = document.createElement("span");
+      pSizeLab.className = "vd-dash-page-size-label";
+      pSizeLab.textContent = this.t("dashPageSizeLabel");
+      const pSize = mkSel("vd-dash-page-size", DASH_PAGE_SIZES.map((n) => ({
+        v: String(n), t: n ? String(n) : this.t("dashPageAll"),
+      })), (v) => {
+        view.pageSize = parseDashPageSize(v);
+        /* 每页变多也可能让当前页码越界（第 5 页 / 每页 10 → 每页 100 只剩 1 页）：
+         * 回到第 1 页比让 dashPageSlice 悄悄夹一下更好读——读者刚动的就是这个下拉。 */
+        view.page = 1;
+        lsWrite(DASH_PAGE_KEY, String(view.pageSize));
+      });
+      /* option 建完才认值（真 DOM 的规则，mkSel 里那句 s.value="" 是它自己的初始口径），
+       * 所以这里必须显式对一次表。 */
+      pSize.value = String(view.pageSize);
+      pSize.title = this.t("dashPageSizeTip");
+      pager.title = this.t("dashPageTip");
+      pager.append(pInfo, pPrev, pNum, pNext, pSizeLab, pSize);
+      body.append(pager);
       /* 挂进文档以后才有内容宽：这一步把「默认值 / 记忆值」折成「这一屏放得下的宽度」，
        * 操作列因此不会再被弹窗右缘裁掉（现场截图的头号故障）。
        * 先量一次内容下限（六档视口 × 两种字典都是在 Chromium 里验的）再排：
@@ -7706,6 +7946,10 @@ module.exports._internals = {
   // 看板排序与筛选（纯函数），供 node 端回归直接断言
   DASH_SORT_KEYS, DASH_STATUS_ORDER, DASH_CHANGED_ORDER, DASH_VIEW_KEY,
   dashSortValue, dashCompare,
+  /* 看板翻页（纯函数 + 记忆口径）：每页条数是「习惯」要落盘，页码是「这次翻到哪儿」
+   * 不落盘；越界夹取（筛选变短、每页变大）必须回到真实存在的页数。 */
+  DASH_PAGE_SIZES, DASH_PAGE_SIZE_DEFAULT, DASH_PAGE_KEY,
+  parseDashPageSize, dashPageCount, dashPageSlice,
   // 看板删除记录的两个口径（行标识 / 「线上还挂着」），供 node 端回归直接断言
   rowKeyOf, isLiveRec,
   /* 记录清单与操作按钮的三个纯函数口径：封顶裁剪、能不能「删除远端文件」、
