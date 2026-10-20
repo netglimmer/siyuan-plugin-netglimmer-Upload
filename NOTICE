@@ -1,0 +1,23 @@
+siyuan-plugin-netglimmer-Upload
+Copyright (C) 2026 取舍 and contributors
+
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU Affero General Public License as published by the Free
+Software Foundation, either version 3 of the License, or (at your option) any
+later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
+details.
+
+You should have received a copy of the GNU Affero General Public License along
+with this program in the LICENSE file. If not, see
+<https://www.gnu.org/licenses/>.
+
+Third-party code
+----------------
+src/vendored/index-html.js contains front-end export code ported from SiYuan
+(https://github.com/siyuan-note/siyuan), which is licensed under the GNU Affero
+General Public License v3.0. That ported code remains under AGPL-3.0 and its
+copyright remains with the SiYuan authors.

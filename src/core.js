@@ -917,7 +917,7 @@ function sanitizeName(name) {
 
 /* ---------------- WebDAV 服务器存不下的文件名 ----------------
  * 文档标题在 sanitizeName 里已经洗过，但导出目录里的 assets/ 文件名是**原样上传**的。
- * IIS WebDAV 背后是 NTFS，实测（172.16.100.132 / IIS 10）：
+ * IIS WebDAV 背后是 NTFS，实测（IIS 10）：
  *   · `< > : " | ? * \` —— 文件系统非法字符 → PUT 直接 400/404；
  *   · `+`（即使已编码成 %2B）→ 404；
  *   · 结尾的点或空格 → 400（Win32 会把它们剥掉）；
@@ -3412,7 +3412,7 @@ function normalizeKey(u) {
 function fsKey(u) { return String(u || "").replace(/\/+$/, ""); }
 
 /* PROPFIND 返回的 <d:href> 有两种写法，两家服务器各用一种（本机实测）：
- *   IIS 10  → 绝对 URL：http://172.16.100.132/wdav-v07-test/.wdav-probe.bin
+ *   IIS 10  → 绝对 URL：http://host.example/dav/.wdav-probe.bin
  *   nginx   → 根相对路径：/nginx-test/WebDAV%E5%8F%91%E5%B8%83%E6%B5%8B%E8%AF%95/f.bin（dav_ext）
  * 任何「把 href 和请求 URL 对齐」的地方都必须先归一到同一形态，
  * 否则在 nginx 上永远匹配不到——探针就会退回去按文本读正文，随机字节被 UTF-8
