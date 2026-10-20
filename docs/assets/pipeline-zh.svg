@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="300" viewBox="0 0 1200 300" role="img" aria-labelledby="t d">
+<title id="t">一次上传，从头到尾</title>
+<desc id="d">导出 → 上传 → 校验 → 看板；重复上传自动复用未变的文件。</desc>
+<rect x="0.5" y="0.5" width="1199" height="299" rx="20" fill="#f7f8fa" stroke="#e2e6ee"/>
+<text x="48" y="57" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif" font-size="30" font-weight="700" fill="#1c2027">一次上传，从头到尾</text>
+<text x="48" y="87" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif" font-size="16" fill="#4b5566">导出 → 上传 → 校验 → 看板；重复上传自动复用未变的文件。</text>
+  <rect x="48" y="120" width="240" height="150" rx="14" fill="#ffffff" stroke="#e2e6ee"/>
+  <circle cx="70" cy="144" r="13" fill="#eeeefc"/>
+  <text x="70" y="149" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif" font-size="14" font-weight="700" fill="#5b5bd6">1</text>
+  <text x="92" y="150" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif" font-size="19" font-weight="700" fill="#1c2027">思源文档</text>
+  <text x="68" y="184" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif" font-size="14" fill="#4b5566">文档树右键，单篇或含子文档</text>
+  <text x="68" y="208" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif" font-size="14" fill="#4b5566">按当前设置选择格式与协议</text>
+  <text x="68" y="232" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif" font-size="14" fill="#7b8698">命令面板 / 状态栏也能触发</text>
+  <line x1="288" y1="195" x2="328" y2="195" stroke="#8b7cf7" stroke-width="3" stroke-linecap="round"/><path d="M321 188 L329 195 L321 202" fill="none" stroke="#8b7cf7" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="336" y="120" width="240" height="150" rx="14" fill="#ffffff" stroke="#e2e6ee"/>
+  <circle cx="358" cy="144" r="13" fill="#eeeefc"/>
+  <text x="358" y="149" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif" font-size="14" font-weight="700" fill="#5b5bd6">2</text>
+  <text x="380" y="150" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif" font-size="19" font-weight="700" fill="#1c2027">导出格式</text>
+  <rect x="356" y="166" width="200" height="28" rx="7" fill="#eeeefc"/>
+  <text x="368" y="185" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif" font-size="12.5" font-weight="600" fill="#5b5bd6">HTML (SiYuan) · 推荐</text>
+  <rect x="356" y="200" width="200" height="28" rx="7" fill="#e6f6ee"/>
+  <text x="368" y="219" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif" font-size="12.5" font-weight="600" fill="#2f9e6f">Markdown</text>
+  <rect x="356" y="234" width="200" height="28" rx="7" fill="#eef0f4"/>
+  <text x="368" y="253" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif" font-size="12.5" font-weight="600" fill="#4b5566">Word (.docx)</text>
+  <line x1="576" y1="195" x2="616" y2="195" stroke="#8b7cf7" stroke-width="3" stroke-linecap="round"/><path d="M609 188 L617 195 L609 202" fill="none" stroke="#8b7cf7" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="624" y="120" width="240" height="150" rx="14" fill="#ffffff" stroke="#e2e6ee"/>
+  <circle cx="646" cy="144" r="13" fill="#eeeefc"/>
+  <text x="646" y="149" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif" font-size="14" font-weight="700" fill="#5b5bd6">3</text>
+  <text x="668" y="150" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif" font-size="19" font-weight="700" fill="#1c2027">上传协议</text>
+  <rect x="644" y="166" width="96" height="28" rx="7" fill="#eef0f4"/>
+  <text x="692.0" y="185" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif" font-size="12.5" font-weight="600" fill="#4b5566">WebDAV</text>
+  <rect x="744" y="166" width="96" height="28" rx="7" fill="#eef0f4"/>
+  <text x="792.0" y="185" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif" font-size="12.5" font-weight="600" fill="#4b5566">FTP</text>
+  <rect x="644" y="200" width="96" height="28" rx="7" fill="#eef0f4"/>
+  <text x="692.0" y="219" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif" font-size="12.5" font-weight="600" fill="#4b5566">SFTP</text>
+  <rect x="744" y="200" width="96" height="28" rx="7" fill="#eef0f4"/>
+  <text x="792.0" y="219" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif" font-size="12.5" font-weight="600" fill="#4b5566">本地目录</text>
+  <text x="644" y="248" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif" font-size="12.5" fill="#7b8698">并发 / 重试 / 读回校验</text>
+  <line x1="864" y1="195" x2="904" y2="195" stroke="#8b7cf7" stroke-width="3" stroke-linecap="round"/><path d="M897 188 L905 195 L897 202" fill="none" stroke="#8b7cf7" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="912" y="120" width="240" height="150" rx="14" fill="#ffffff" stroke="#e2e6ee"/>
+  <circle cx="934" cy="144" r="13" fill="#eeeefc"/>
+  <text x="934" y="149" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif" font-size="14" font-weight="700" fill="#5b5bd6">4</text>
+  <text x="956" y="150" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif" font-size="19" font-weight="700" fill="#1c2027">服务器目录</text>
+  <text x="932" y="184" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif" font-size="14" fill="#4b5566">静态目录或站点根</text>
+  <text x="932" y="208" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif" font-size="14" fill="#4b5566">浏览器直接打开</text>
+  <text x="932" y="232" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif" font-size="14" fill="#7b8698">看板可重试、可清理</text>
+</svg>

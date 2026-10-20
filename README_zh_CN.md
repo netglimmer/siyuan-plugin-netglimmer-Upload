@@ -1,5 +1,7 @@
 # Netglimmer 上传（siyuan-plugin-netglimmer-Upload）
 
+> [中文首页](https://github.com/netglimmer/siyuan-plugin-netglimmer-Upload/blob/main/README.md) · [English overview](https://github.com/netglimmer/siyuan-plugin-netglimmer-Upload/blob/main/README_en.md) · [Full English manual](https://github.com/netglimmer/siyuan-plugin-netglimmer-Upload/blob/main/README_en_US.md) · **完整中文手册**
+
 一键把文档按 **HTML (SiYuan) / Markdown / Word (.docx)** 三种导出格式之一**上传**到 WebDAV / FTP / SFTP 服务器或本地目录（回归里真跑过的是 IIS WebDAV、IIS FTP、Nginx dav、vsftpd、OpenSSH-SFTP；群晖 / 威联通 / Alist 这类只要实现标准协议就能用，但本机没有真机，不在「已实测」之列）。选 HTML (SiYuan) 时，上传出来的页面与官方「文档分享」渲染效果一致：双链、块引用、块嵌入、图片资产全部保留。
 
 > **这个插件只做「把文件传到服务器上」这一件事。** 它不部署站点、不管端口、不发证书——那个目录能不能用浏览器打开、以什么域名打开，是服务器（IIS / nginx / 别名映射 / 挂载点）的决定，插件既不知道也猜不准。所以界面上只说「上传」，不说「发布」；按钮只给「查看上传路径」，不承诺「打开 / 复制访问地址」：把文件真正落在了哪个目录摊开给你看，剩下的路你自己走。
@@ -131,7 +133,7 @@ node build.js --check  # 只校验 src/ 内部一致性：标记与文件是否�
 - `src/core.js` 里的 `/* @@VENDOR:名字@@ … */` 是拼装标记（注释形式，运行时是空语句）；`src/vendored/*.js` 里 `/* @@SEGMENT-BEGIN@@ */` 之后的内容会被原样拼回，**首尾不要增删空行**，否则 `--verify` 会失败。
 - 这三段为什么要单独成文件：`index-html.js` / `gbk-table.js` 里有多条上万字符级的超长行（GBK 表那一行 70267 字符），混在主文件里会把每次 grep、diff、代码审阅都污染。分开之后 `src/core.js` 的 7975 行里最长行只有 371 字符，一条超过 500 字符的行都没有。
 - 同步官方前端代码时（思源升级后 `buildIndexHtml` 相关实现可能变化）：先在思源里手动「导出 → HTML (SiYuan)」拿一份基准，再改 `src/vendored/index-html.js`，改完必须让上传产物的全量字节校验（`publish` 第 6.5 步，或本地 `run.js` / `run-multi.js` 回归）通过——这个插件的立身之本是「与手动导出逐字节一致」，不是「差不多就行」。
-- 打包发布：`node build.js && node build.js --verify`，然后把 `index.js`、`plugin.json`、`icon.png`、`README.md`（英文，`readme.default` 指向它，缺了会在插件详情里显示为空白）、`README_zh_CN.md`、`LICENSE`、`NOTICE`、`i18n/` 压成 zip（不要把 `src/`、`build.js` 放进插件包，思源用不到）。`plugin.json` 的 `backends` 必须为空（本插件没有内核侧代码）、`frontends` 只能用思源真实存在的取值（`desktop` / `desktop-window` / `browser-desktop` / `browser-mobile` / `mobile` / `all`），`desktop-store`、`desktop-linux` 这类是无效值。
+- 打包发布：`node build.js && node build.js --verify`，然后把 `index.js`、`plugin.json`、`icon.png`、`README_en_US.md`（英文完整手册，`readme.default` 指向它，缺了会在插件详情里显示为空白）、`README_zh_CN.md`、`LICENSE`、`NOTICE`、`i18n/` 压成 zip（不要把 `src/`、`build.js` 放进插件包，思源用不到）。`plugin.json` 的 `backends` 必须为空（本插件没有内核侧代码）、`frontends` 只能用思源真实存在的取值（`desktop` / `desktop-window` / `browser-desktop` / `browser-mobile` / `mobile` / `all`），`desktop-store`、`desktop-linux` 这类是无效值。
 - 集市卡片图标：思源 3.8.6 只看**插件根目录下的 `icon.png`**——内核 `getInstalledPlugin` 在文件存在时才把 `iconURL` 填成 `/plugins/<插件目录名>/icon.png?v=<时间戳>`，前端拿它当 `<img src>`；文件不存在或加载失败，卡片就退回紫色商店占位图（实测：往目录里丢一个 `icon.png`，接口立刻开始返回该地址，`cmp` 校验返回字节与本地文件一致）。`plugin.json` 里**没有**图标字段，写 `icon` 也不会被读。图标由 `python3 tools/make-icon.py` 生成（512×512 RGBA，约 12 KB；脚本零依赖，自带浅/深色与 64px 缩略预览，用于确认小尺寸下仍读得出「文档 + 上传」）；打包脚本会校验它是正方形、带透明通道、边长在 256–1024、且不超过 60 KB。
 - i18n 两份 JSON 是从 `src/core.js` 内嵌字典生成的，手改其中一份会在下次生成时被覆盖；新增文案请同时补 `zh_CN` 与 `en_US` 两处，并保证键集一致（回归脚本会断言）。
 
